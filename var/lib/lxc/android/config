@@ -12,7 +12,6 @@ lxc.hook.pre-start = /var/lib/lxc/android/pre-start.sh
 
 lxc.init.cmd = /init
 
-lxc.apparmor.profile = unconfined
 lxc.autodev = 0
 
 lxc.mount.entry = tmpfs dev tmpfs nosuid 0 0
