@@ -1,15 +1,15 @@
-#!/bin/bash
+#!/bin/sh
 
 # On systems with A/B partition layout, current slot is provided via cmdline parameter.
 if [ -e /proc/bootconfig ]; then
-    ab_slot_suffix=$(grep -o 'androidboot\.slot_suffix = ".."' /proc/bootconfig | cut -d '"' -f2)
+    ab_slot_suffix=$(awk -F '"' '$1=="androidboot.slot_suffix = " {print $2}' /proc/bootconfig)
 fi
 
 if [ -z "$ab_slot_suffix" ]; then
     ab_slot_suffix=$(grep -o 'androidboot\.slot_suffix=..' /proc/cmdline |  cut -d "=" -f2)
 fi
 
-[ ! -z "$ab_slot_suffix" ] && echo "A/B slot system detected! Slot suffix is $ab_slot_suffix"
+[ "$ab_slot_suffix" ] && echo "A/B slot system detected! Slot suffix is $ab_slot_suffix"
 
 find_partition_path() {
     label=$1
@@ -31,12 +31,19 @@ find_partition_path() {
 parse_mount_flags() {
     org_options="$1"
     options=""
-    for i in $(echo $org_options | tr "," "\n"); do
-        [[ "$i" =~ context|trusted ]] && continue
-        options+=$i","
+    oldIFS="$IFS"
+    IFS=","
+    for i in ${org_options}; do
+        case "$i" in *context*|*trusted*) continue ;; esac
+        options="${options}${i},"
     done
-    options=${options%?}
-    echo $options
+    IFS="$oldIFS"
+    unset oldIFS
+    echo ${options%?}
+}
+
+starts_with() {
+    case "${1}" in "${2}"*) true ;; *) false ;; esac
 }
 
 if [ -n "${BIND_MOUNT_PATH}" ] && ! mountpoint -q -- "${BIND_MOUNT_PATH}"; then
@@ -125,7 +132,7 @@ fi
 echo "checking if system overlay exists"
 if [ -d "/usr/lib/droid-system-overlay" ]; then
     echo "mounting android's system overlay"
-    if [ $(uname -r | cut -d "." -f 1) -ge "4" ]; then
+    if [ "${kernel_ver_major:=$(uname -r | cut -d. -f1)}" -ge 4 ]; then
         mount -t overlay overlay -o lowerdir=/usr/lib/droid-system-overlay:/var/lib/lxc/android/rootfs/system /var/lib/lxc/android/rootfs/system
     else
         mount -t overlay overlay -o lowerdir=/var/lib/lxc/android/rootfs/system,upperdir=/usr/lib/droid-system-overlay,workdir=/var/lib/lxc/android/ /var/lib/lxc/android/rootfs/system
@@ -135,7 +142,7 @@ fi
 echo "checking if vendor overlay exists"
 if [ -d "/usr/lib/droid-vendor-overlay" ]; then
     echo "mounting android's vendor overlay"
-    if [ $(uname -r | cut -d "." -f 1) -ge "4" ]; then
+    if [ "${kernel_ver_major:=$(uname -r | cut -d. -f1)}" -ge 4 ]; then
         mount -t overlay overlay -o lowerdir=/usr/lib/droid-vendor-overlay:/var/lib/lxc/android/rootfs/vendor /var/lib/lxc/android/rootfs/vendor
     else
         mount -t overlay overlay -o lowerdir=/var/lib/lxc/android/rootfs/vendor,upperdir=/usr/lib/droid-vendor-overlay,workdir=/var/lib/lxc/android/ /var/lib/lxc/android/rootfs/vendor
@@ -152,15 +159,15 @@ cat ${fstab} ${EXTRA_FSTAB} | while read line; do
     set -- $line
 
     # stop processing if we hit the "#endhalium" comment in the file
-    echo $1 | egrep -q "^#endhalium" && break
+    starts_with "${1}" "#endhalium" && break
 
     # Skip any unwanted entry
-    echo $1 | egrep -q "^#" && continue
-    ([ -z "$1" ] || [ -z "$2" ] || [ -z "$3" ] || [ -z "$4" ]) && continue
-    ([ "$2" = "/system" ] || [ "$2" = "/data" ] || [ "$2" = "/" ] \
-    || [ "$2" = "auto" ] || [ "$2" = "/vendor" ] || [ "$2" = "none" ] \
-    || [ "$2" = "/misc" ] || [ "$2" = "/system_ext" ] || [ "$2" = "/product" ]) && continue
-    ([ "$3" = "emmc" ] || [ "$3" = "swap" ] || [ "$3" = "mtd" ]) && continue
+    starts_with "${1}" "#" && continue
+    { [ -z "$1" ] || [ -z "$2" ] || [ -z "$3" ] || [ -z "$4" ]; } && continue
+    { [ "$2" = "/system" ] || [ "$2" = "/data" ] || [ "$2" = "/" ] \
+      || [ "$2" = "auto" ] || [ "$2" = "/vendor" ] || [ "$2" = "none" ] \
+      || [ "$2" = "/misc" ] || [ "$2" = "/system_ext" ] || [ "$2" = "/product" ]; } && continue
+    { [ "$3" = "emmc" ] || [ "$3" = "swap" ] || [ "$3" = "mtd" ]; } && continue
 
     label=$(echo $1 | awk -F/ '{print $NF}')
     [ -z "$label" ] && continue
@@ -176,7 +183,7 @@ cat ${fstab} ${EXTRA_FSTAB} | while read line; do
     mount $path $2 -t $3 -o $(parse_mount_flags $4)
 
     # Bind mount on rootfs if we should
-    if [ -n "${BIND_MOUNT_PATH}" ] && [[ ${2} != /mnt/* ]]; then
+    if [ -n "${BIND_MOUNT_PATH}" ] && ! starts_with "${2}" "/mnt/"; then
         # /mnt is recursively binded via the LXC configuration
         mount -o bind ${2} "${BIND_MOUNT_PATH}/${2}"
     fi
