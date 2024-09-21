@@ -103,7 +103,7 @@ sys_vendor="/sys/firmware/devicetree/base/firmware/android/fstab/vendor"
 if [ -e $sys_vendor ] && ! mountpoint -q -- /vendor; then
     label=$(cat $sys_vendor/dev | awk -F/ '{print $NF}')
     path=$(find_partition_path $label)
-    [ ! -e "$path" ] && echo "Error vendor not found" && exit
+    [ ! -e "$path" ] && echo "Error vendor not found" && exit 1
     type=$(cat $sys_vendor/type)
     options=$(parse_mount_flags $(cat $sys_vendor/mnt_flags))
     echo "mounting $path as /vendor"
@@ -151,7 +151,7 @@ fi
 
 # Assume there's only one fstab in vendor
 fstab=$(ls /vendor/etc/fstab*)
-[ -z "$fstab" ] && echo "fstab not found" && exit
+[ -z "$fstab" ] && echo "fstab not found" && exit 1
 
 echo "checking fstab $fstab for additional mount points"
 

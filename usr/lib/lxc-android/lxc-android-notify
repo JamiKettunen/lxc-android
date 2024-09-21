@@ -37,7 +37,7 @@ else
 fi
 
 # Wait for the container
-lxc-wait -n android -t 10 -s "RUNNING"
+lxc-wait -n android -t 10 -s "RUNNING" || error "android container failed to start within 10 seconds"
 
 if [ "${ANDROID_SDK_VERSION}" -ge 29 ]; then
 	info "Detected Android 10+ container"
