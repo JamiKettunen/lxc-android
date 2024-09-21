@@ -40,7 +40,6 @@ fi
 lxc-wait -n android -t 10 -s "RUNNING"
 
 if [ "${ANDROID_SDK_VERSION}" -ge 29 ]; then
-	# Android >= 10
 	info "Detected Android 10+ container"
 
 	# Wait for apex to show up
@@ -77,6 +76,14 @@ if [ "${ANDROID_SDK_VERSION}" -ge 29 ]; then
 			mount --bind ${source} ${target}
 		fi
 	done
+
+	info "setting up linkerconfig"
+	mount -t tmpfs android_linkerconfig /linkerconfig
+	/system/bin/linkerconfig --target /linkerconfig
+	sed -i '' -E \
+		-e 's:([^a-zA-Z])/:\1/android/:g' \
+		-e 's:android/android/:android/:g' \
+		/linkerconfig/ld.config.txt
 fi
 
 # Notify systemd we're done
