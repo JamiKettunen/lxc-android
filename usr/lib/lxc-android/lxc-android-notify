@@ -86,8 +86,8 @@ if [ "${ANDROID_SDK_VERSION}" -ge 29 ]; then
 		/linkerconfig/ld.config.txt
 fi
 
-# Notify systemd we're done
-systemd-notify --ready --status="Container ready"
+# Notify dinit we're done (container ready)
+echo > /dev/fd/${LXC_ANDROID_READY_FD}
 
 # Block on lxc-wait
 lxc-wait -n android -s "STOPPED"
