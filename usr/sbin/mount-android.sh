@@ -11,18 +11,33 @@ fi
 
 [ "$ab_slot_suffix" ] && echo "A/B slot system detected! Slot suffix is $ab_slot_suffix"
 
+contains() {
+    case "${1}" in *"${2}"*) true ;; *) false ;; esac
+}
+
 find_partition_path() {
     label=$1
+    fs_mgr_flags=$2
     path="/dev/$label"
     # In case fstab provides /dev/mmcblk0p* lines
     for dir in by-partlabel by-name by-label by-path by-uuid by-partuuid by-id; do
         # On A/B systems not all of the partitions are duplicated, so we have to check with and without suffix
-        if [ -e "/dev/disk/$dir/$label$ab_slot_suffix" ]; then
-            path="/dev/disk/$dir/$label$ab_slot_suffix"
-            break
-        elif [ -e "/dev/disk/$dir/$label" ]; then
-            path="/dev/disk/$dir/$label"
-            break
+        if contains "$fs_mgr_flags" "logical"; then
+            if [ -e "/dev/mapper/dynpart-$label$ab_slot_suffix" ]; then
+                path="/dev/mapper/dynpart-$label$ab_slot_suffix"
+                break
+            elif [ -e "/dev/mapper/dynpart-$label" ]; then
+                path="/dev/mapper/dynpart-$label"
+                break
+            fi
+        else
+            if [ -e "/dev/disk/$dir/$label$ab_slot_suffix" ]; then
+                path="/dev/disk/$dir/$label$ab_slot_suffix"
+                break
+            elif [ -e "/dev/disk/$dir/$label" ]; then
+                path="/dev/disk/$dir/$label"
+                break
+            fi
         fi
     done
     echo $path
@@ -174,7 +189,7 @@ cat ${fstab} ${EXTRA_FSTAB} | while read line; do
 
     echo "checking mount label $label"
 
-    path=$(find_partition_path $label)
+    path=$(find_partition_path ${label} ${5})
 
     [ ! -e "$path" ] && continue
 
