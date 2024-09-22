@@ -49,7 +49,7 @@ if [ "${ANDROID_SDK_VERSION}" -ge 29 ]; then
 /android/system/apex/com.android.runtime.debug/${LIBDIR}/bionic:\
 /android/system/${LIBDIR}" \
 	WAITFORSERVICE_VALUE="ready" \
-		/usr/bin/waitforservice apexd.status
+		waitforservice apexd.status
 
 	info "apexd ready, replicating bind-mounts"
 	for mpoint in /apex/*; do
