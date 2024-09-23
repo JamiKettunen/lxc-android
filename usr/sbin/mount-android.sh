@@ -95,34 +95,12 @@ if [ ! -e "/vendor/build.prop" ]; then
     done
 fi
 
-sys_vendor="/sys/firmware/devicetree/base/firmware/android/fstab/vendor"
-if [ -e $sys_vendor ] && ! mountpoint -q -- /vendor; then
-    label=$(cat $sys_vendor/dev | awk -F/ '{print $NF}')
-    path=$(find_partition_path $label)
-    [ ! -e "$path" ] && echo "Error vendor not found" && exit 1
-    type=$(cat $sys_vendor/type)
-    options=$(parse_mount_flags $(cat $sys_vendor/mnt_flags))
-    echo "mounting $path as /vendor"
-    mount $path /vendor -t $type -o $options
-fi
-
 # Bind-mount /vendor if we should. Legacy devices do not have /vendor
 # on a separate partition and we should handle that.
 if [ -n "${BIND_MOUNT_PATH}" ] && mountpoint -q -- /vendor; then
     # Mountpoint, bind-mount. We don't use rbind as we're going
     # to go through the fstab anyways.
     mount -o bind /vendor "${BIND_MOUNT_PATH}/vendor"
-fi
-
-sys_persist="/sys/firmware/devicetree/base/firmware/android/fstab/persist"
-if [ -e $sys_persist ]; then
-    label=$(cat $sys_persist/dev | awk -F/ '{print $NF}')
-    path=$(find_partition_path $label)
-    # [ ! -e "$path" ] && echo "Error persist not found" && exit
-    type=$(cat $sys_persist/type)
-    options=$(parse_mount_flags $(cat $sys_persist/mnt_flags))
-    echo "mounting $path as /mnt/vendor/persist"
-    mount $path /mnt/vendor/persist -t $type -o $options
 fi
 
 echo "checking if system overlay exists"
