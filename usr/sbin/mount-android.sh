@@ -61,14 +61,37 @@ starts_with() {
     case "${1}" in "${2}"*) true ;; *) false ;; esac
 }
 
-if [ -n "${BIND_MOUNT_PATH}" ] && ! mountpoint -q -- "${BIND_MOUNT_PATH}"; then
-    android_images="/userdata/android-rootfs.img /var/lib/lxc/android/android-rootfs.img"
-    for image in ${android_images}; do
-        if [ -f "${image}" ]; then
-            mount "${image}" "${BIND_MOUNT_PATH}"
-            break
+mount_image() {
+    mpoint="${1}"
+    check_file="${mpoint}/${2}"
+    part_purpose="${3}"
+    shift 3
+    [ -f "${check_file}" ] && return
+
+    echo "checking for ${mpoint} mount point"
+    for image in "${@}"; do
+        [ -e "${image}" ] || continue
+        mount "${image}" "${mpoint}" -o ro
+        if [ ! -f "${check_file}" ]; then
+            echo "${image} is not a valid ${part_purpose} partition (image)"
+            umount "${mpoint}"
+            continue
         fi
+        echo "mounted ${image} as ${mpoint}"
+        break
     done
+}
+
+if [ -n "${BIND_MOUNT_PATH}" ]; then
+    android_images="
+/userdata/android-rootfs.img
+/var/lib/lxc/android/android-rootfs.img
+"
+    mount_image "${BIND_MOUNT_PATH}" "system/etc/init/init.halium.rc" "Halium-patched Android system root" ${android_images}
+    if [ ! -f "${BIND_MOUNT_PATH}/system/etc/init/init.halium.rc" ]; then
+        echo "${BIND_MOUNT_PATH}/system/etc/init/init.halium.rc doesn't exist"
+        exit 1
+    fi
 fi
 
 if [ -e "/dev/disk/by-partlabel/super" ]; then
@@ -76,24 +99,19 @@ if [ -e "/dev/disk/by-partlabel/super" ]; then
     dmsetup create --concise "$(parse-android-dynparts /dev/disk/by-partlabel/super)"
 fi
 
-if [ ! -e "/vendor/build.prop" ]; then
-    echo "checking for vendor mount point"
-    vendor_images="/userdata/vendor.img /var/lib/lxc/android/vendor.img /dev/disk/by-partlabel/vendor${ab_slot_suffix} /dev/disk/by-partlabel/vendor_a /dev/disk/by-partlabel/vendor_b /dev/mapper/dynpart-vendor /dev/mapper/dynpart-vendor${ab_slot_suffix} /dev/mapper/dynpart-vendor_a /dev/mapper/dynpart-vendor_b"
-    for image in $vendor_images; do
-        if [ -e $image ]; then
-            echo "mounting vendor from $image"
-            mount $image /vendor -o ro
-
-            if [ -e "/vendor/build.prop" ]; then
-                echo "found valid vendor partition: $image"
-                break
-            else
-                echo "$image is not a valid vendor partition"
-                umount /vendor
-            fi
-        fi
-    done
-fi
+vendor_images="
+/userdata/vendor.img
+/var/lib/lxc/android/vendor.img
+/dev/disk/by-partlabel/vendor${ab_slot_suffix}
+/dev/disk/by-partlabel/vendor_a
+/dev/disk/by-partlabel/vendor_b
+/dev/mapper/dynpart-vendor
+/dev/mapper/dynpart-vendor${ab_slot_suffix}
+/dev/mapper/dynpart-vendor_a
+/dev/mapper/dynpart-vendor_b
+"
+mount_image "/vendor" "build.prop" "vendor" ${vendor_images}
+[ ! -f "/vendor/build.prop" ] && echo "/vendor/build.prop doesn't exist" && exit 1
 
 # Bind-mount /vendor if we should. Legacy devices do not have /vendor
 # on a separate partition and we should handle that.
