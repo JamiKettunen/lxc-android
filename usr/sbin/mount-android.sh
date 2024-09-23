@@ -82,6 +82,23 @@ mount_image() {
     done
 }
 
+create_overlay() {
+    [ "${BIND_MOUNT_PATH}" ] || return
+    dir="${1}"
+    target="${BIND_MOUNT_PATH}/${dir}"
+    overlay="/usr/lib/droid-${dir}-overlay"
+    echo "checking if ${dir} overlay exists"
+    [ -d "${overlay}" ] || return
+
+    echo "mounting ${overlay} over ${target}"
+    if [ "${kernel_ver_major:=$(uname -r | cut -d. -f1)}" -ge 4 ]; then
+        opts="lowerdir=${overlay}:${target}"
+    else
+        opts="lowerdir=${target},upperdir=${overlay},workdir=/var/lib/lxc/android/"
+    fi
+    mount -t overlay ${dir}_overlay -o ${opts} ${target}
+}
+
 if [ -n "${BIND_MOUNT_PATH}" ]; then
     android_images="
 /userdata/android-rootfs.img
@@ -121,25 +138,8 @@ if [ -n "${BIND_MOUNT_PATH}" ] && mountpoint -q -- /vendor; then
     mount -o bind /vendor "${BIND_MOUNT_PATH}/vendor"
 fi
 
-echo "checking if system overlay exists"
-if [ -d "/usr/lib/droid-system-overlay" ]; then
-    echo "mounting android's system overlay"
-    if [ "${kernel_ver_major:=$(uname -r | cut -d. -f1)}" -ge 4 ]; then
-        mount -t overlay overlay -o lowerdir=/usr/lib/droid-system-overlay:/var/lib/lxc/android/rootfs/system /var/lib/lxc/android/rootfs/system
-    else
-        mount -t overlay overlay -o lowerdir=/var/lib/lxc/android/rootfs/system,upperdir=/usr/lib/droid-system-overlay,workdir=/var/lib/lxc/android/ /var/lib/lxc/android/rootfs/system
-    fi
-fi
-
-echo "checking if vendor overlay exists"
-if [ -d "/usr/lib/droid-vendor-overlay" ]; then
-    echo "mounting android's vendor overlay"
-    if [ "${kernel_ver_major:=$(uname -r | cut -d. -f1)}" -ge 4 ]; then
-        mount -t overlay overlay -o lowerdir=/usr/lib/droid-vendor-overlay:/var/lib/lxc/android/rootfs/vendor /var/lib/lxc/android/rootfs/vendor
-    else
-        mount -t overlay overlay -o lowerdir=/var/lib/lxc/android/rootfs/vendor,upperdir=/usr/lib/droid-vendor-overlay,workdir=/var/lib/lxc/android/ /var/lib/lxc/android/rootfs/vendor
-    fi
-fi
+create_overlay "system"
+create_overlay "vendor"
 
 # Assume there's only one fstab in vendor
 fstab=$(ls /vendor/etc/fstab*)
