@@ -95,25 +95,6 @@ if [ ! -e "/vendor/build.prop" ]; then
     done
 fi
 
-if [ ! -e "/vendor_dlkm/etc/build.prop" ]; then
-    echo "checking for vendor_dlkm mount point"
-    vendor_dlkm_images="/dev/mapper/dynpart-vendor_dlkm /dev/mapper/dynpart-vendor_dlkm${ab_slot_suffix} /dev/mapper/dynpart-vendor_dlkm_a /dev/mapper/dynpart-vendor_dlkm_b"
-    for image in $vendor_dlkm_images; do
-        if [ -e $image ]; then
-            echo "mounting vendor_dlkm from $image"
-            mount $image /vendor_dlkm -o ro
-
-            if [ -e "/vendor_dlkm/etc/build.prop" ]; then
-                echo "found valid vendor_dlkm partition: $image"
-                break
-            else
-                echo "$image is not a valid vendor_dlkm partition"
-                umount /vendor_dlkm
-            fi
-        fi
-    done
-fi
-
 sys_vendor="/sys/firmware/devicetree/base/firmware/android/fstab/vendor"
 if [ -e $sys_vendor ] && ! mountpoint -q -- /vendor; then
     label=$(cat $sys_vendor/dev | awk -F/ '{print $NF}')
