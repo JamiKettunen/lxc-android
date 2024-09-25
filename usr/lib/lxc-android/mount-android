@@ -1,4 +1,8 @@
 #!/bin/sh
+mkdir -p /dev/cpuset
+mount none /dev/cpuset -t cpuset -o nodev,noexec,nosuid
+
+BIND_MOUNT_PATH="$(sed -n 's/^lxc.rootfs.path = //p' /var/lib/lxc/android/config)"
 
 # On systems with A/B partition layout, current slot is provided via cmdline parameter.
 if [ -e /proc/bootconfig ]; then
