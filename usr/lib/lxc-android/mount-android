@@ -2,4 +2,4 @@
 mkdir -p /dev/cpuset
 mount none /dev/cpuset -t cpuset -o nodev,noexec,nosuid
 
-BIND_MOUNT_PATH="/var/lib/lxc/android/rootfs" /usr/sbin/mount-android.sh
+BIND_MOUNT_PATH="$(sed -n 's/^lxc.rootfs.path = //p' /var/lib/lxc/android/config)" mount-android.sh
