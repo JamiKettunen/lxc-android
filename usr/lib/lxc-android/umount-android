@@ -1,9 +1,14 @@
 #!/bin/sh
+# NOTE: this is ran before lxc-android has finished stopping..
 
 android_rootfs="$(sed -n 's/^lxc.rootfs.path = //p' /var/lib/lxc/android/config)"
 echo "Unmounting all under $android_rootfs..."
+while [ "$(lsof -t $android_rootfs)" ]; do
+	sleep 0.5 # wait for lxc-android post-stop.sh to do its thing
+done
 umount -R $android_rootfs
 
-if [ -b /dev/disk/by-partlabel/super ]; then
+# just stalls here if we try this without udev around (like during dinit shutdown/reboot)
+if [ -b /dev/disk/by-partlabel/super ] && pgrep udevd >/dev/null; then
 	dmsetup remove /dev/mapper/dynpart-* || :
 fi

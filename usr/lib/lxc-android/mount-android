@@ -76,6 +76,9 @@ mount_image() {
     echo "checking for ${mpoint} mount point"
     for image in "${@}"; do
         [ -e "${image}" ] || continue
+        if [ "${mpoint}" != "${BIND_MOUNT_PATH}" ] && [ ! -L "${mpoint}" ]; then
+            ln -sr "${BIND_MOUNT_PATH}${mpoint}" "${mpoint}"
+        fi
         mount "${image}" "${mpoint}" -o ro
         if [ ! -f "${check_file}" ]; then
             echo "${image} is not a valid ${part_purpose} partition (image)"
@@ -132,15 +135,9 @@ vendor_images="
 mount_image "/vendor" "build.prop" "vendor" ${vendor_images}
 [ ! -f "/vendor/build.prop" ] && echo "/vendor/build.prop doesn't exist" && exit 1
 
-# Bind-mount /vendor if we should. Legacy devices do not have /vendor
-# on a separate partition and we should handle that.
-if mountpoint -q -- /vendor; then
-    # Mountpoint, bind-mount. We don't use rbind as we're going
-    # to go through the fstab anyways.
-    mount -o bind /vendor "${BIND_MOUNT_PATH}/vendor"
-fi
-
+[ -L /system ] || ln -sr ${BIND_MOUNT_PATH}/system /system # also needed by libhybris
 create_overlay "system"
+[ -L /vendor ] || ln -sr ${BIND_MOUNT_PATH}/vendor /vendor # just in case..
 create_overlay "vendor"
 
 # Assume there's only one fstab in vendor
@@ -172,13 +169,12 @@ cat ${fstab} ${EXTRA_FSTAB} | while read line; do
 
     [ ! -e "$path" ] && continue
 
-    mkdir -p $2
-    echo "mounting $path as $2"
-    mount $path $2 -t $3 -o $(parse_mount_flags $4)
-
-    # Bind mount on rootfs if we should
-    if ! starts_with "${2}" "/mnt/"; then
-        # /mnt is recursively binded via the LXC configuration
-        mount -o bind ${2} "${BIND_MOUNT_PATH}/${2}"
+    top_dir=${2%/${2#/*/}}
+    if starts_with "${2}" "/mnt/"; then
+        grep -q " ${BIND_MOUNT_PATH}/mnt " /proc/mounts || mount -t tmpfs android_mnt "${BIND_MOUNT_PATH}/mnt"
     fi
+    mkdir -p ${BIND_MOUNT_PATH}${2} # in case of /mnt/* (under new tmpfs) etc, others must already exist in read-only android rootfs
+    echo "mounting $path as $2"
+    opts="$(parse_mount_flags $4)"
+    mount ${path} ${BIND_MOUNT_PATH}${2} -t ${3} -o ${opts}
 done
