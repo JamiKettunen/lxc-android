@@ -1,0 +1,9 @@
+#!/bin/sh
+
+android_rootfs="$(sed -n 's/^lxc.rootfs.path = //p' /var/lib/lxc/android/config)"
+echo "Unmounting all under $android_rootfs..."
+umount -R $android_rootfs
+
+if [ -b /dev/disk/by-partlabel/super ]; then
+	dmsetup remove /dev/mapper/dynpart-* || :
+fi
