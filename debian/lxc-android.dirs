@@ -3,6 +3,5 @@
 /lib/systemd/system
 /lib/systemd/udev/rules.d
 /usr/lib/lxc-android
-/usr/sbin
 /var/lib/lxc/android
 /var/lib/lxc/android/rootfs
