@@ -65,7 +65,7 @@ if [ "${ANDROID_SDK_VERSION}" -ge 29 ]; then
 		source_apex=$(get_source_apex_name ${apex})
 
 		if [ -z "${source_apex}" ]; then
-			warning "Unable to finx source apex for apex ${apex}"
+			warning "Unable to find source apex for apex ${apex}"
 			continue
 		fi
 
