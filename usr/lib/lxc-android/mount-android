@@ -3,6 +3,7 @@ mkdir -p /dev/cpuset
 mount none /dev/cpuset -t cpuset -o nodev,noexec,nosuid
 
 BIND_MOUNT_PATH="$(sed -n 's/^lxc.rootfs.path = //p' /var/lib/lxc/android/config)"
+echo "Android rootfs is ${BIND_MOUNT_PATH}"
 
 # On systems with A/B partition layout, current slot is provided via cmdline parameter.
 if [ -e /proc/bootconfig ]; then
@@ -87,7 +88,6 @@ mount_image() {
 }
 
 create_overlay() {
-    [ "${BIND_MOUNT_PATH}" ] || return
     dir="${1}"
     target="${BIND_MOUNT_PATH}/${dir}"
     overlay="/usr/lib/droid-${dir}-overlay"
@@ -103,16 +103,14 @@ create_overlay() {
     mount -t overlay ${dir}_overlay -o ${opts} ${target}
 }
 
-if [ -n "${BIND_MOUNT_PATH}" ]; then
-    android_images="
+android_images="
 /userdata/android-rootfs.img
 /var/lib/lxc/android/android-rootfs.img
 "
-    mount_image "${BIND_MOUNT_PATH}" "system/etc/init/init.halium.rc" "Halium-patched Android system root" ${android_images}
-    if [ ! -f "${BIND_MOUNT_PATH}/system/etc/init/init.halium.rc" ]; then
-        echo "${BIND_MOUNT_PATH}/system/etc/init/init.halium.rc doesn't exist"
-        exit 1
-    fi
+mount_image "${BIND_MOUNT_PATH}" "system/etc/init/init.halium.rc" "Halium-patched Android system root" ${android_images}
+if [ ! -f "${BIND_MOUNT_PATH}/system/etc/init/init.halium.rc" ]; then
+    echo "${BIND_MOUNT_PATH}/system/etc/init/init.halium.rc doesn't exist"
+    exit 1
 fi
 
 if [ -e "/dev/disk/by-partlabel/super" ]; then
@@ -136,7 +134,7 @@ mount_image "/vendor" "build.prop" "vendor" ${vendor_images}
 
 # Bind-mount /vendor if we should. Legacy devices do not have /vendor
 # on a separate partition and we should handle that.
-if [ -n "${BIND_MOUNT_PATH}" ] && mountpoint -q -- /vendor; then
+if mountpoint -q -- /vendor; then
     # Mountpoint, bind-mount. We don't use rbind as we're going
     # to go through the fstab anyways.
     mount -o bind /vendor "${BIND_MOUNT_PATH}/vendor"
@@ -179,7 +177,7 @@ cat ${fstab} ${EXTRA_FSTAB} | while read line; do
     mount $path $2 -t $3 -o $(parse_mount_flags $4)
 
     # Bind mount on rootfs if we should
-    if [ -n "${BIND_MOUNT_PATH}" ] && ! starts_with "${2}" "/mnt/"; then
+    if ! starts_with "${2}" "/mnt/"; then
         # /mnt is recursively binded via the LXC configuration
         mount -o bind ${2} "${BIND_MOUNT_PATH}/${2}"
     fi
