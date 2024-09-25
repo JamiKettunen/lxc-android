@@ -1,5 +1,5 @@
 lxc.rootfs.path = /var/lib/lxc/android/rootfs
-lxc.uts.name = armhf
+lxc.uts.name = halium
 
 lxc.net.0.type = none
 
