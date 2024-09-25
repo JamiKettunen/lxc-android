@@ -6,7 +6,6 @@ lxc.net.0.type = none
 lxc.tty.dir = lxc
 lxc.tty.max  = 4
 lxc.pty.max = 1024
-lxc.arch = armhf
 lxc.cap.drop = mac_admin mac_override
 
 lxc.hook.pre-start = /var/lib/lxc/android/pre-start.sh
