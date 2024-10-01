@@ -82,7 +82,7 @@ mount_image() {
         mount "${image}" "${mpoint}" -o ro
         if [ ! -f "${check_file}" ]; then
             echo "${image} is not a valid ${part_purpose} partition (image)"
-            umount "${mpoint}"
+            umount -R "${mpoint}"
             continue
         fi
         echo "mounted ${image} as ${mpoint}"
