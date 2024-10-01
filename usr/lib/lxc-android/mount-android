@@ -158,6 +158,7 @@ cat ${fstab} ${EXTRA_FSTAB} | while read line; do
     { [ "$2" = "/system" ] || [ "$2" = "/data" ] || [ "$2" = "/" ] \
       || [ "$2" = "auto" ] || [ "$2" = "/vendor" ] || [ "$2" = "none" ] \
       || [ "$2" = "/misc" ] || [ "$2" = "/system_ext" ] || [ "$2" = "/product" ]; } && continue
+    { [ -e /userdata/cache ] && [ "$2" = "/cache" ]; } && continue
     { [ "$3" = "emmc" ] || [ "$3" = "swap" ] || [ "$3" = "mtd" ]; } && continue
 
     label=$(echo $1 | awk -F/ '{print $NF}')
