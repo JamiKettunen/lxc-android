@@ -28,17 +28,16 @@ get_source_apex_name() {
 	done
 }
 
+# Wait for the container
+lxc-wait -n android -t 10 -s "RUNNING" || error "android container failed to start within 10 seconds"
+
 # Get Android container version
-ANDROID_SDK_VERSION=$(getprop ro.build.version.sdk)
+ANDROID_SDK_VERSION=$(sed -n 's/ro.build.version.sdk=//p' /system/build.prop)
 if [ "$(getconf LONG_BIT)" -eq 32 ]; then
 	LIBDIR="lib"
 else
 	LIBDIR="lib64"
 fi
-
-# Wait for the container
-lxc-wait -n android -t 10 -s "RUNNING" || error "android container failed to start within 10 seconds"
-
 if [ "${ANDROID_SDK_VERSION}" -ge 29 ]; then
 	info "Detected Android 10+ container"
 
