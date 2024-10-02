@@ -87,6 +87,7 @@ fi
 
 # Notify dinit we're done (container ready)
 echo > /dev/fd/${LXC_ANDROID_READY_FD}
+info "'android' container has finished starting"
 
 # Block on lxc-wait
 lxc-wait -n android -s "STOPPED"
