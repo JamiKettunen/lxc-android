@@ -83,6 +83,8 @@ if [ "${ANDROID_SDK_VERSION}" -ge 29 ]; then
 		-e 's:([^a-zA-Z])/:\1/android/:g' \
 		-e 's:android/android/:android/:g' \
 		/linkerconfig/ld.config.txt
+else
+	waitforservice init.svc.vndservicemanager
 fi
 
 # Notify dinit we're done (container ready)
