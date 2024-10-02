@@ -76,7 +76,7 @@ if [ "${ANDROID_SDK_VERSION}" -ge 29 ]; then
 		fi
 	done
 
-	info "setting up linkerconfig"
+	info "Setting up linkerconfig"
 	mount -t tmpfs android_linkerconfig /linkerconfig
 	/system/bin/linkerconfig --target /linkerconfig
 	sed -i '' -E \
