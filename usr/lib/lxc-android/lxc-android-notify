@@ -91,12 +91,12 @@ fi
 echo > /dev/fd/${LXC_ANDROID_READY_FD}
 info "'android' container has finished starting"
 
-# Set hostname on initial boot
+# Set hostname on initial boot (TODO: move elsewhere?)
 if [ -f /run/dinit/first-boot ]; then
 	[ -f /etc/default/hostname ] && hostname="$(cat /etc/default/hostname)"
 	if [ -z "${hostname}" ]; then
 		device="$(getprop ro.product.vendor.device)"
-		[ "${device}" ] && hostname="chimera-${device}"
+		[ "${device}" ] && hostname="${device}"
 	fi
 	[ -z "${hostname}" ] && hostname="chimera"
 	info "First boot, setting hostname to '${hostname}'"
