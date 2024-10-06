@@ -39,7 +39,7 @@ else
 	LIBDIR="lib64"
 fi
 if [ "${ANDROID_SDK_VERSION}" -ge 29 ]; then
-	info "Detected Android 10+ container"
+	info "Detected Android 10+ container, waiting for apexd to be ready..."
 
 	# Wait for apex to show up
 	HYBRIS_LD_LIBRARY_PATH="\
