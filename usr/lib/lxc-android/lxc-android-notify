@@ -75,16 +75,19 @@ if [ "${ANDROID_SDK_VERSION}" -ge 29 ]; then
 			mount --bind ${source} ${target}
 		fi
 	done
+else
+	waitforservice init.svc.vndservicemanager
+fi
 
-	info "Setting up linkerconfig"
+if [ "${ANDROID_SDK_VERSION}" -ge 30 ]; then
+	# https://source.android.com/docs/core/architecture/vndk/linker-namespace#linker-namespace-creation
+	info "Detected Android 11+ container, setting up linkerconfig"
 	mount -t tmpfs android_linkerconfig /linkerconfig
 	/system/bin/linkerconfig --target /linkerconfig
 	sed -i '' -E \
 		-e 's:([^a-zA-Z])/:\1/android/:g' \
 		-e 's:android/android/:android/:g' \
 		/linkerconfig/ld.config.txt
-else
-	waitforservice init.svc.vndservicemanager
 fi
 
 # Notify dinit we're done (container ready)
