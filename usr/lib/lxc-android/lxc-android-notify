@@ -64,14 +64,24 @@ if [ "${ANDROID_SDK_VERSION}" -ge 29 ]; then
 		apex=${mpoint##*/}
 		target="/apex/${apex}"
 
-		source_apex=$(get_source_apex_name ${apex})
+		# FIXME: broken linkerconfig for vndk31 in api32(+) image?!
+		# e.g. llndk.libraries.31.txt not under /android/system/apex/ but /android/system_ext/apex/
+		# /android/system/apex/com.android.vndk.current is for 32
+		# "/system/bin/linkerconfig --target /linkerconfig" just Aborted:
+		# F linkerconfig: context.cc:101] Check failed: !"undefined var" LLNDK_LIBRARIES_VENDOR is not defined
+		if [ "${ANDROID_SDK_VERSION}" -ge 32 ] && [ "${apex}" = "com.android.vndk.v31" ]; then
+			source_apex="com.android.vndk.v31"
+			source="/android/system_ext/apex/${source_apex}"
+		else
+			source_apex=$(get_source_apex_name ${apex})
 
-		if [ -z "${source_apex}" ]; then
-			warning "Unable to find source apex for apex ${apex}"
-			continue
+			if [ -z "${source_apex}" ]; then
+				warning "Unable to find source apex for apex ${apex}"
+				continue
+			fi
+
+			source="/android/system/apex/${source_apex}"
 		fi
-
-		source="/android/system/apex/${source_apex}"
 
 		if [ -d "${source}" ]; then
 			info "Replicating bind-mount for apex ${apex}"
