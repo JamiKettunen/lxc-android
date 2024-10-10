@@ -14,6 +14,8 @@ warning() {
 
 error() {
 	echo "E: $@" >&2
+	# NOTE: this will cause other stuff to attempt starting briefly...
+	lxc-wait -n android -t 0 -s "RUNNING" && echo > /dev/fd/${LXC_ANDROID_READY_FD}
 	exit 1
 }
 
