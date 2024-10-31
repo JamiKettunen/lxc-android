@@ -107,6 +107,7 @@ create_overlay() {
 }
 
 android_images="
+/userdata/chimera/android-rootfs.img
 /userdata/android-rootfs.img
 /var/lib/lxc/android/android-rootfs.img
 "
@@ -122,6 +123,7 @@ if [ -e "/dev/disk/by-partlabel/super" ]; then
 fi
 
 vendor_images="
+/userdata/chimera/vendor.img
 /userdata/vendor.img
 /var/lib/lxc/android/vendor.img
 /dev/disk/by-partlabel/vendor${ab_slot_suffix}
